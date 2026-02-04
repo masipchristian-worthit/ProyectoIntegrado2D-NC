@@ -41,7 +41,7 @@ Material:
     - _DitherThreshold: 0.0509
     - _NoiseScale: -0.1
     - _NoiseSpeed: 1.99
-    - _Softness: 0.01
+    - _Softness: -0.14
     - _TextureBlend: -0.1
     m_Colors:
     - _DarkColor: {r: 0.14207543, g: 0, b: 0.25882354, a: 1}

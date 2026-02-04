@@ -12,6 +12,7 @@ public class PlayerController2D : MonoBehaviour
     [SerializeField] private Sprite spriteUp;
     [SerializeField] private Sprite spriteDown;
     [SerializeField] private Sprite spriteSide;
+    [SerializeField] private Animator anim;
 
     [Header("Interaction Colliders")]
     // El collider lateral (original) que se volteará
@@ -77,37 +78,72 @@ public class PlayerController2D : MonoBehaviour
 
     // Nueva función para manejar la lógica visual y de estado
     void HandleDirection()
+{
+    // 1. SANEAMIENTO DE DATOS: Usamos una copia local. 
+    // Jamás modifiques 'movement' aquí, o corromperás la física en FixedUpdate.
+    Vector2 input = movement; 
+    
+    // ---------------------------------------------------------
+    // CASO A: Movimiento Vertical Puro (Prioridad visual)
+    // ---------------------------------------------------------
+    if (Mathf.Abs(input.y) > 0.1f && Mathf.Abs(input.x) < 0.01f)
     {
-        // Prioridad al movimiento vertical para el cambio de sprite (como en Zelda/Pokemon)
-        if (movement.y > 0.1f && movement.x == 0)
+        // Apagamos el Animator para tener control manual del SpriteRenderer
+        if (anim != null && anim.enabled) anim.enabled = false;
+
+        if (input.y > 0)
         {
-            movement.x = 0; // Aseguramos que no haya movimiento horizontal
             currentDirection = Direction.Up;
             if (spriteUp) spriteRenderer.sprite = spriteUp;
         }
-        else if (movement.y < -0.1f && movement.x == 0)
+        else
         {
-            movement.x = 0; // Aseguramos que no haya movimiento horizontal
             currentDirection = Direction.Down;
             if (spriteDown) spriteRenderer.sprite = spriteDown;
         }
-        // Si hay movimiento horizontal
-        else if (Mathf.Abs(movement.x) > 0f && movement.y == 0)
-        {
-            currentDirection = Direction.Side;
-            if (spriteSide) spriteRenderer.sprite = spriteSide;
+    }
+    // ---------------------------------------------------------
+    // CASO B: Movimiento Lateral (O Diagonal)
+    // ---------------------------------------------------------
+    else if (Mathf.Abs(input.x) > 0.01f)
+    {
+        currentDirection = Direction.Side;
 
-            // Lógica de Flip para Sprite y Collider
-            if (movement.x > 0) // Derecha
+        if (anim != null)
+        {
+            // Si el animator estaba apagado, lo encendemos y forzamos su actualización
+            if (!anim.enabled) 
             {
-                transform.localScale = new Vector3(1, 1, 1); // Aseguramos escala positiva
+                anim.enabled = true;
+                // CRÍTICO: Esto fuerza a Unity a evaluar la lógica AHORA MISMO,
+                // evitando que espere al siguiente frame para aplicar el booleano.
+                anim.Update(0f); 
             }
-            else // Izquierda
+            anim.SetBool("isMoving", true);
+        }
+
+        // Lógica de Flip (Escala) manteniendo proporciones
+        Vector3 currentScale = transform.localScale;
+        float direction = Mathf.Sign(input.x); // Devuelve 1 o -1
+        transform.localScale = new Vector3(Mathf.Abs(currentScale.x) * direction, currentScale.y, currentScale.z);
+    }
+    // ---------------------------------------------------------
+    // CASO C: Idle (Quieto)
+    // ---------------------------------------------------------
+    else 
+    {
+        // Solo volvemos al Animator si estábamos mirando de lado.
+        // Si estábamos mirando arriba/abajo, mantenemos el último sprite estático.
+        if (currentDirection == Direction.Side)
+        {
+            if (anim != null)
             {
-                transform.localScale = new Vector3(-1, 1, 1); // Volteamos horizontalmente
+                if (!anim.enabled) anim.enabled = true;
+                anim.SetBool("isMoving", false);
             }
         }
     }
+}
 
     // COROUTINES
     IEnumerator Interact()

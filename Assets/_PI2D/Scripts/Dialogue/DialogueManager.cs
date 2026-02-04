@@ -2,7 +2,6 @@ using System.Collections;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
 
 public class DialogueManager : MonoBehaviour
 {
@@ -11,21 +10,22 @@ public class DialogueManager : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI dialogueText;
-    [SerializeField] private TextMeshProUGUI nameText;
+    [SerializeField] private TextMeshProUGUI nameText; // Asegúrate de asignar esto en el inspector si lo usas, o el script ignorará el nombre.
     [SerializeField] private Transform optionsContainer;
     [SerializeField] private GameObject optionButtonPrefab;
 
     [Header("Shader Control")]
-    [SerializeField] private Material despeloteMaterial; 
+    [SerializeField] private Material despeloteMaterial;
 
     [Header("Settings")]
     [SerializeField] private float typingSpeed = 0.05f;
-    [SerializeField] private PlayerInput playerInput;
+
+    // NOTA TÉCNICA: Se ha eliminado la referencia a PlayerInput para evitar conflictos de autoridad.
 
     // ESTADO INTERNO
     private bool isTyping = false;
-    private DialogueNode currentNode; 
-    private int currentSegmentIndex = 0; 
+    private DialogueNode currentNode;
+    private int currentSegmentIndex = 0;
 
     void Awake()
     {
@@ -37,17 +37,21 @@ public class DialogueManager : MonoBehaviour
 
     public void StartDialogue(DialogueNode rootNode)
     {
-        Time.timeScale = 0f;
-        playerInput.SwitchCurrentActionMap("UI");
+        Time.timeScale = 0f; // Pausamos el tiempo físico
+
+        // INTERVENCIÓN: Delegamos el cambio de mapa al InputManager central
+        if (InputManager.Instance != null)
+            InputManager.Instance.SwitchTo(InputManager.InputMapType.UI);
+
         dialoguePanel.SetActive(true);
-        
+
         DisplayNode(rootNode);
     }
 
     private void DisplayNode(DialogueNode node)
     {
         currentNode = node;
-        currentSegmentIndex = 0; 
+        currentSegmentIndex = 0;
 
         if (node == null || node.dialogueSequence == null || node.dialogueSequence.Length == 0)
         {
@@ -57,7 +61,7 @@ public class DialogueManager : MonoBehaviour
 
         ClearOptions();
         StopAllCoroutines();
-        
+
         StartCoroutine(TypeSegment(node.dialogueSequence[currentSegmentIndex]));
     }
 
@@ -65,6 +69,12 @@ public class DialogueManager : MonoBehaviour
     {
         isTyping = true;
         dialogueText.text = "";
+
+        // Si tienes un campo para el nombre en la UI, lo actualizamos aquí
+        if (nameText != null)
+        {
+            nameText.text = segment.speakerName;
+        }
 
         // 1. APLICAR CAMBIOS AL SHADER
         if (segment.visualEffect.applyChanges && despeloteMaterial != null)
@@ -76,6 +86,7 @@ public class DialogueManager : MonoBehaviour
         foreach (char letter in segment.text.ToCharArray())
         {
             dialogueText.text += letter;
+            // Usamos WaitForSecondsRealtime porque Time.timeScale es 0
             yield return new WaitForSecondsRealtime(typingSpeed);
         }
 
@@ -84,12 +95,14 @@ public class DialogueManager : MonoBehaviour
 
     public void DisplayNextSentence()
     {
+        // Si el texto se está escribiendo, lo completamos de golpe
         if (isTyping)
         {
             StopAllCoroutines();
             dialogueText.text = currentNode.dialogueSequence[currentSegmentIndex].text;
             isTyping = false;
-            
+
+            // Si era la última frase, mostramos opciones inmediatamente
             if (currentSegmentIndex == currentNode.dialogueSequence.Length - 1)
             {
                 GenerateOptions(currentNode);
@@ -97,6 +110,7 @@ public class DialogueManager : MonoBehaviour
             return;
         }
 
+        // Si hay más frases en la secuencia actual, avanzamos
         if (currentSegmentIndex < currentNode.dialogueSequence.Length - 1)
         {
             currentSegmentIndex++;
@@ -104,13 +118,18 @@ public class DialogueManager : MonoBehaviour
         }
         else
         {
-            if (optionsContainer.childCount > 0) return;
-            GenerateOptions(currentNode);
+            // Si ya no hay frases y no se han generado opciones, las generamos
+            if (optionsContainer.childCount == 0)
+            {
+                GenerateOptions(currentNode);
+            }
         }
     }
 
     void ApplyShaderSettings(ShaderSettings settings)
     {
+        if (despeloteMaterial == null) return;
+
         despeloteMaterial.SetColor("_LightColor", settings.lightColor);
         despeloteMaterial.SetColor("_DarkColor", settings.darkColor);
         despeloteMaterial.SetFloat("_NoiseSpeed", settings.noiseSpeed);
@@ -123,16 +142,28 @@ public class DialogueManager : MonoBehaviour
 
     void GenerateOptions(DialogueNode node)
     {
+        // Limpiamos opciones previas por seguridad
+        ClearOptions();
+
         if (node.responses != null && node.responses.Length > 0)
         {
             foreach (DialogueResponse response in node.responses)
             {
-                CreateButton(response.responseText, () => OnOptionSelected(response.nextNode));
+                // Usamos una variable local para capturar el cierre en el loop lambda
+                DialogueNode next = response.nextNode;
+                CreateButton(response.responseText, () => OnOptionSelected(next));
             }
         }
         else
         {
+            // Opción por defecto para cerrar si no hay ramas
             CreateButton("Cerrar", EndDialogue);
+        }
+
+        // Opcional: Seleccionar automáticamente el primer botón para navegación con mando
+        if (optionsContainer.childCount > 0)
+        {
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(optionsContainer.GetChild(0).gameObject);
         }
     }
 
@@ -140,8 +171,8 @@ public class DialogueManager : MonoBehaviour
     {
         GameObject btnObj = Instantiate(optionButtonPrefab, optionsContainer);
         TextMeshProUGUI btnText = btnObj.GetComponentInChildren<TextMeshProUGUI>();
-        if(btnText) btnText.text = text;
-        
+        if (btnText) btnText.text = text;
+
         Button btn = btnObj.GetComponent<Button>();
         btn.onClick.RemoveAllListeners();
         btn.onClick.AddListener(action);
@@ -149,20 +180,35 @@ public class DialogueManager : MonoBehaviour
 
     void OnOptionSelected(DialogueNode nextNode)
     {
-        if (nextNode != null) DisplayNode(nextNode);
-        else EndDialogue();
+        if (nextNode != null)
+        {
+            DisplayNode(nextNode);
+        }
+        else
+        {
+            EndDialogue();
+        }
     }
 
     void ClearOptions()
     {
-        foreach (Transform child in optionsContainer) Destroy(child.gameObject);
+        foreach (Transform child in optionsContainer)
+        {
+            Destroy(child.gameObject);
+        }
     }
 
     public void EndDialogue()
     {
         dialoguePanel.SetActive(false);
         ClearOptions();
-        Time.timeScale = 1f;
-        playerInput.SwitchCurrentActionMap("Gameplay");
+        Time.timeScale = 1f; // Restauramos el tiempo
+
+        // SOLUCIÓN CRÍTICA: Forzamos el estado de Gameplay explícitamente.
+        // Esto corrige el bug de quedarse atascado en UI al iniciar el juego.
+        if (InputManager.Instance != null)
+            InputManager.Instance.SwitchTo(InputManager.InputMapType.Gameplay);
+        else
+            Debug.LogError("InputManager Instance no encontrada. El jugador no podrá moverse.");
     }
 }

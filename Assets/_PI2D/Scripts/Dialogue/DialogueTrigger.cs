@@ -2,17 +2,26 @@ using UnityEngine;
 
 public class DialogueTrigger : MonoBehaviour
 {
-    [Header("Árbol de Diálogo")]
-    [Tooltip("El primer mensaje de la conversación. Despliega para añadir respuestas.")]
-    [SerializeField] private DialogueNode rootNode;
+    [Header("Estado del NPC")]
+    [SerializeField] private DialogueNode firstEncounterNode; // Primera vez
+    [SerializeField] private DialogueNode visitedNode;        // Veces siguientes
+
+    private bool hasSpoken = false;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // Verifica que chocamos con el trigger de interacción del Player
-        if (collision.CompareTag("PlayerInteract"))
+        if (collision.CompareTag("PlayerInteract")) // O tu lógica de input
         {
-            Debug.Log("Iniciando conversación ramificada...");
-            DialogueManager.Instance.StartDialogue(rootNode);
+            // Lógica de selección de diálogo
+            DialogueNode nodeToPlay = (hasSpoken && visitedNode != null) ? visitedNode : firstEncounterNode;
+
+            DialogueManager.Instance.StartDialogue(nodeToPlay);
+
+            // Marcamos como hablado para la próxima vez
+            hasSpoken = true;
         }
     }
+
+    // Opcional: Si necesitas resetearlo desde un evento externo
+    public void ResetDialogueState() => hasSpoken = false;
 }

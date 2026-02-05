@@ -16,7 +16,7 @@ MonoBehaviour:
   - speakerName: "Sr. Garc\xEDa"
     text: Bueno, ya es hora del recro.
     visualEffect:
-      applyChanges: 1
+      applyChanges: 0
       lightColor: {r: 0.16862746, g: 0.04705883, b: 0.26666668, a: 0}
       darkColor: {r: 0, g: 0, b: 0, a: 0}
       noiseSpeed: 1.99

@@ -385,8 +385,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1
-  m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
-  m_Color: {r: 0.78867924, g: 0.7773366, b: 0.75445354, a: 1}
+  m_Sprite: {fileID: -5392811121321605970, guid: 2156e6548c5154e4db3ac9e65040441b, type: 3}
+  m_Color: {r: 0.79622644, g: 0.79622644, b: 0.79622644, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -410,9 +410,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerControlle2D
   moveSpeed: 5
   spriteRenderer: {fileID: 5632507785503664754}
-  spriteUp: {fileID: 0}
+  spriteUp: {fileID: -1731801465563974114, guid: 3ec59025b6a2c21408511a7d7ed8bfa9, type: 3}
   spriteDown: {fileID: 0}
   spriteSide: {fileID: 0}
+  anim: {fileID: 0}
   InteractColliderSide: {fileID: 8510880992199905300}
   InteractColliderUp: {fileID: 229684274376758699}
   InteractColliderDown: {fileID: 3169490528388222681}
@@ -455,7 +456,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 2}
+    oldSize: {x: 1.23, y: 5.52}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -473,7 +474,7 @@ Animator:
   m_GameObject: {fileID: 6654580756947864822}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 25d7f5bebe3f79c4aa788ab18e8d0587, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -511,7 +512,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!114 &2889055197241723305
 MonoBehaviour:
   m_ObjectHideFlags: 0

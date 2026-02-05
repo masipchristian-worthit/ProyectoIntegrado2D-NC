@@ -2,27 +2,28 @@ using System.Collections;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using DG.Tweening; // Importante: Requiere DOTween
 
 public class DialogueManager : MonoBehaviour
 {
     public static DialogueManager Instance;
 
     [Header("UI References")]
-    [SerializeField] private GameObject dialoguePanel;
+    [SerializeField] private RectTransform dialoguePanelRect; // Referencia al RectTransform para moverlo
+    [SerializeField] private Image dialogueBackgroundImage;   // Solo para el material (Shader)
     [SerializeField] private TextMeshProUGUI dialogueText;
-    [SerializeField] private TextMeshProUGUI nameText; // Asegúrate de asignar esto en el inspector si lo usas, o el script ignorará el nombre.
+    [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private Transform optionsContainer;
     [SerializeField] private GameObject optionButtonPrefab;
 
-    [Header("Shader Control")]
-    [SerializeField] private Material despeloteMaterial;
-
     [Header("Settings")]
     [SerializeField] private float typingSpeed = 0.05f;
+    [SerializeField] private float panelAnimationSpeed = 0.5f;
 
-    // NOTA TÉCNICA: Se ha eliminado la referencia a PlayerInput para evitar conflictos de autoridad.
+    // Posición original para saber dónde volver
+    private Vector2 originalPanelPosition;
+    private float offScreenYPosition = -1080f; // Ajusta según tu resolución, o usa Screen.height
 
-    // ESTADO INTERNO
     private bool isTyping = false;
     private DialogueNode currentNode;
     private int currentSegmentIndex = 0;
@@ -32,18 +33,29 @@ public class DialogueManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        dialoguePanel.SetActive(false);
+        // Guardamos la posición de diseño (centro)
+        if (dialoguePanelRect != null)
+        {
+            originalPanelPosition = dialoguePanelRect.anchoredPosition;
+            // Lo ocultamos inicialmente moviéndolo abajo
+            dialoguePanelRect.anchoredPosition = new Vector2(originalPanelPosition.x, -Screen.height);
+            dialoguePanelRect.gameObject.SetActive(false);
+        }
     }
 
     public void StartDialogue(DialogueNode rootNode)
     {
-        Time.timeScale = 0f; // Pausamos el tiempo físico
+        Time.timeScale = 0f;
 
-        // INTERVENCIÓN: Delegamos el cambio de mapa al InputManager central
         if (InputManager.Instance != null)
             InputManager.Instance.SwitchTo(InputManager.InputMapType.UI);
 
-        dialoguePanel.SetActive(true);
+        dialoguePanelRect.gameObject.SetActive(true);
+
+        // Animación DOTween de entrada (Desde abajo con efecto rebote "OutBack")
+        dialoguePanelRect.DOAnchorPos(originalPanelPosition, panelAnimationSpeed)
+            .SetEase(Ease.OutBack)
+            .SetUpdate(true); // Ignora Time.timeScale = 0
 
         DisplayNode(rootNode);
     }
@@ -61,7 +73,6 @@ public class DialogueManager : MonoBehaviour
 
         ClearOptions();
         StopAllCoroutines();
-
         StartCoroutine(TypeSegment(node.dialogueSequence[currentSegmentIndex]));
     }
 
@@ -70,47 +81,57 @@ public class DialogueManager : MonoBehaviour
         isTyping = true;
         dialogueText.text = "";
 
-        // Si tienes un campo para el nombre en la UI, lo actualizamos aquí
-        if (nameText != null)
+        if (nameText != null) nameText.text = segment.speakerName;
+
+        // Aplicar Shader con animación si es necesario
+        if (segment.visualEffect.applyChanges && dialogueBackgroundImage != null)
         {
-            nameText.text = segment.speakerName;
+            ApplyShaderSettings(segment.visualEffect.GetFinalSettings());
         }
 
-        // 1. APLICAR CAMBIOS AL SHADER
-        if (segment.visualEffect.applyChanges && despeloteMaterial != null)
-        {
-            ApplyShaderSettings(segment.visualEffect);
-        }
-
-        // 2. ESCRIBIR TEXTO
         foreach (char letter in segment.text.ToCharArray())
         {
             dialogueText.text += letter;
-            // Usamos WaitForSecondsRealtime porque Time.timeScale es 0
             yield return new WaitForSecondsRealtime(typingSpeed);
         }
 
         isTyping = false;
     }
 
+    // --- INTEGRACIÓN DOTWEEN PARA SHADER ---
+    void ApplyShaderSettings(ShaderSettings settings)
+    {
+        if (dialogueBackgroundImage.material == null) return;
+
+        Material mat = dialogueBackgroundImage.material;
+        float duration = settings.transitionDuration; // Sacado del SO
+
+        // Animamos los colores y valores usando DOTween
+        // Usamos SetUpdate(true) porque el juego está en pausa (TimeScale 0)
+        mat.DOColor(settings.lightColor, "_LightColor", duration).SetUpdate(true);
+        mat.DOColor(settings.darkColor, "_DarkColor", duration).SetUpdate(true);
+
+        mat.DOFloat(settings.noiseSpeed, "_NoiseSpeed", duration).SetUpdate(true);
+        mat.DOFloat(settings.noiseScale, "_NoiseScale", duration).SetUpdate(true);
+        mat.DOFloat(settings.ditherThreshold, "_DitherThreshold", duration).SetUpdate(true);
+        mat.DOFloat(settings.ditherStrength, "_DitherStrength", duration).SetUpdate(true);
+        mat.DOFloat(settings.softness, "_Softness", duration).SetUpdate(true);
+        mat.DOFloat(settings.textureBlend, "_TextureBlend", duration).SetUpdate(true);
+    }
+
     public void DisplayNextSentence()
     {
-        // Si el texto se está escribiendo, lo completamos de golpe
         if (isTyping)
         {
             StopAllCoroutines();
             dialogueText.text = currentNode.dialogueSequence[currentSegmentIndex].text;
             isTyping = false;
 
-            // Si era la última frase, mostramos opciones inmediatamente
             if (currentSegmentIndex == currentNode.dialogueSequence.Length - 1)
-            {
                 GenerateOptions(currentNode);
-            }
             return;
         }
 
-        // Si hay más frases en la secuencia actual, avanzamos
         if (currentSegmentIndex < currentNode.dialogueSequence.Length - 1)
         {
             currentSegmentIndex++;
@@ -118,51 +139,30 @@ public class DialogueManager : MonoBehaviour
         }
         else
         {
-            // Si ya no hay frases y no se han generado opciones, las generamos
-            if (optionsContainer.childCount == 0)
-            {
-                GenerateOptions(currentNode);
-            }
+            if (optionsContainer.childCount == 0) GenerateOptions(currentNode);
         }
-    }
-
-    void ApplyShaderSettings(ShaderSettings settings)
-    {
-        if (despeloteMaterial == null) return;
-
-        despeloteMaterial.SetColor("_LightColor", settings.lightColor);
-        despeloteMaterial.SetColor("_DarkColor", settings.darkColor);
-        despeloteMaterial.SetFloat("_NoiseSpeed", settings.noiseSpeed);
-        despeloteMaterial.SetFloat("_NoiseScale", settings.noiseScale);
-        despeloteMaterial.SetFloat("_DitherThreshold", settings.ditherThreshold);
-        despeloteMaterial.SetFloat("_DitherStrength", settings.ditherStrength);
-        despeloteMaterial.SetFloat("_Softness", settings.softness);
-        despeloteMaterial.SetFloat("_TextureBlend", settings.textureBlend);
     }
 
     void GenerateOptions(DialogueNode node)
     {
-        // Limpiamos opciones previas por seguridad
         ClearOptions();
 
         if (node.responses != null && node.responses.Length > 0)
         {
             foreach (DialogueResponse response in node.responses)
             {
-                // Usamos una variable local para capturar el cierre en el loop lambda
                 DialogueNode next = response.nextNode;
                 CreateButton(response.responseText, () => OnOptionSelected(next));
             }
         }
         else
         {
-            // Opción por defecto para cerrar si no hay ramas
             CreateButton("Cerrar", EndDialogue);
         }
 
-        // Opcional: Seleccionar automáticamente el primer botón para navegación con mando
         if (optionsContainer.childCount > 0)
         {
+            // Seleccionar el primer botón para navegación con teclado/mando
             UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(optionsContainer.GetChild(0).gameObject);
         }
     }
@@ -180,35 +180,30 @@ public class DialogueManager : MonoBehaviour
 
     void OnOptionSelected(DialogueNode nextNode)
     {
-        if (nextNode != null)
-        {
-            DisplayNode(nextNode);
-        }
-        else
-        {
-            EndDialogue();
-        }
+        if (nextNode != null) DisplayNode(nextNode);
+        else EndDialogue();
     }
 
     void ClearOptions()
     {
-        foreach (Transform child in optionsContainer)
-        {
-            Destroy(child.gameObject);
-        }
+        foreach (Transform child in optionsContainer) Destroy(child.gameObject);
     }
 
     public void EndDialogue()
     {
-        dialoguePanel.SetActive(false);
         ClearOptions();
-        Time.timeScale = 1f; // Restauramos el tiempo
 
-        // SOLUCIÓN CRÍTICA: Forzamos el estado de Gameplay explícitamente.
-        // Esto corrige el bug de quedarse atascado en UI al iniciar el juego.
-        if (InputManager.Instance != null)
-            InputManager.Instance.SwitchTo(InputManager.InputMapType.Gameplay);
-        else
-            Debug.LogError("InputManager Instance no encontrada. El jugador no podrá moverse.");
+        // Animación de Salida (Hacia abajo)
+        dialoguePanelRect.DOAnchorPos(new Vector2(originalPanelPosition.x, -Screen.height), panelAnimationSpeed)
+            .SetEase(Ease.InBack) // Efecto de anticipación antes de bajar
+            .SetUpdate(true)
+            .OnComplete(() =>
+            {
+                dialoguePanelRect.gameObject.SetActive(false);
+                Time.timeScale = 1f;
+
+                if (InputManager.Instance != null)
+                    InputManager.Instance.SwitchTo(InputManager.InputMapType.Gameplay);
+            });
     }
 }

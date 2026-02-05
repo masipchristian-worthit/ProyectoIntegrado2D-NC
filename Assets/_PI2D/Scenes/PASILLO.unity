@@ -8589,6 +8589,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Main Camera
       objectReference: {fileID: 0}
+    - target: {fileID: 2166949064038263988, guid: e4b202c9470ed8b47b4fa14e35005f79, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7565684669101611954, guid: e4b202c9470ed8b47b4fa14e35005f79, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -8706,6 +8710,10 @@ PrefabInstance:
     - target: {fileID: 1694103243083625823, guid: 0ffedc874a600e94db5885672536c032, type: 3}
       propertyPath: m_Name
       value: AudioPrefab
+      objectReference: {fileID: 0}
+    - target: {fileID: 1694103243083625823, guid: 0ffedc874a600e94db5885672536c032, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6914786666674062217, guid: 0ffedc874a600e94db5885672536c032, type: 3}
       propertyPath: m_LocalPosition.x

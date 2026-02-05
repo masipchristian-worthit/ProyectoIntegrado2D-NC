@@ -44,7 +44,7 @@ Material:
     - _Softness: 0.33
     - _TextureBlend: -0.1
     m_Colors:
-    - _DarkColor: {r: 1, g: 0.033018887, b: 0.033018887, a: 1}
+    - _DarkColor: {r: 0.8867924, g: 0.025525298, b: 0, a: 1}
     - _LightColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

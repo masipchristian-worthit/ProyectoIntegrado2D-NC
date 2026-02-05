@@ -38,13 +38,13 @@ Material:
     m_Ints: []
     m_Floats:
     - _DitherStrength: 0.03
-    - _DitherThreshold: 0.5
+    - _DitherThreshold: 0.81
     - _NoiseScale: -0.1
     - _NoiseSpeed: 1.99
-    - _Softness: 0.01
+    - _Softness: 0.33
     - _TextureBlend: -0.1
     m_Colors:
-    - _DarkColor: {r: 0, g: 0, b: 0, a: 1}
-    - _LightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _DarkColor: {r: 1, g: 0.033018887, b: 0.033018887, a: 1}
+    - _LightColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

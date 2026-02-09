@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 1261927359574082745}
   - component: {fileID: 1747900054174719311}
   - component: {fileID: 3193429491229518156}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Player 1
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -110,8 +110,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerControlle2D
   moveSpeed: 5
   spriteRenderer: {fileID: 4677280891497949271}
-  spriteUp: {fileID: -5392811121321605970, guid: 2156e6548c5154e4db3ac9e65040441b, type: 3}
-  spriteDown: {fileID: 0}
+  spriteUp: {fileID: 6280144877203765229, guid: dc6f0afc099c8314685fabb74662b624, type: 3}
+  spriteDown: {fileID: 8862363752320057160, guid: 1a041910a13c9164c802c71b76e82236, type: 3}
   spriteSide: {fileID: 0}
   anim: {fileID: 1261927359574082745}
   InteractColliderSide: {fileID: 940455812466051857}
@@ -349,7 +349,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1399303824250445930}
   - component: {fileID: 940455812466051857}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: InteractColliderSide
   m_TagString: PlayerInteract
   m_Icon: {fileID: 0}
@@ -427,7 +427,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4715717284052351454}
   - component: {fileID: 5184152651951519764}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: InteractColliderDown
   m_TagString: PlayerInteract
   m_Icon: {fileID: 0}
@@ -505,7 +505,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4105346188927672777}
   - component: {fileID: 2380420507259085630}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: InteractColliderUp
   m_TagString: PlayerInteract
   m_Icon: {fileID: 0}
@@ -582,7 +582,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3629231854833547178}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Colliders
   m_TagString: PlayerInteract
   m_Icon: {fileID: 0}

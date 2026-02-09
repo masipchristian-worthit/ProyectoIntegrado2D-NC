@@ -23,6 +23,10 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -38,13 +42,26 @@ Material:
     m_Ints: []
     m_Floats:
     - _DitherStrength: 0.03
-    - _DitherThreshold: 0.81
+    - _DitherThreshold: 0.67
     - _NoiseScale: -0.1
     - _NoiseSpeed: 1.99
     - _Softness: 0.33
     - _TextureBlend: -0.1
     m_Colors:
-    - _DarkColor: {r: 0.8867924, g: 0.025525298, b: 0, a: 1}
-    - _LightColor: {r: 0, g: 0, b: 0, a: 1}
+    - _DarkColor: {r: 0.49433947, g: 0, b: 0, a: 0}
+    - _LightColor: {r: 0.049055085, g: 0, b: 0.0022336557, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!114 &5096639155289395092
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10

@@ -3,11 +3,24 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "New Dialogue Node", menuName = "Dialogue/Node")]
 public class DialogueNode : ScriptableObject
 {
-    [Header("Secuencia Lineal")]
+    [Header("Audio")]
+    public AudioClip typingSound;
+
+    [Header("Secuencia")]
     public DialogueSegment[] dialogueSequence;
 
     [Header("Decisión Final")]
     public DialogueResponse[] responses;
+
+    [Header("Eventos")]
+    public GameObject prefabToSpawn;
+    public string spawnPointTag;
+    public string eventID;
+
+    [Header("Transición de Escena")]
+    public bool changeSceneOnEnd = false;
+    // CAMBIO: Usamos int para el ID de la Build
+    public int targetSceneIndex;
 }
 
 [System.Serializable]
@@ -32,26 +45,11 @@ public class ShaderSettings
     public bool applyChanges = false;
 
     [Header("Ritmo de la Transición")]
-    [Tooltip("0 = Instantáneo, 0.2 = Abrupto/Rápido, 2.0+ = Lento/Relajado")]
+    [Tooltip("0 = Instantáneo, 0.2 = Rápido, 2.0+ = Lento")]
     [Range(0f, 5f)]
     public float transitionDuration = 0.5f;
 
-    [Tooltip("Si se asigna un preset, se ignorarán los valores manuales.")]
+    [Header("Referencia Obligatoria")]
+    [Tooltip("Arrastra aquí el MaterialPresetSO con los colores y valores.")]
     public MaterialPresetSO preset;
-
-    [Header("Ajustes Manuales")]
-    public Color lightColor = new Color(0.93f, 0.86f, 0.82f);
-    public Color darkColor = new Color(0.2f, 0.3f, 0.18f);
-    public float noiseSpeed = 1.0f;
-    public float noiseScale = 0.05f;
-    public float ditherThreshold = 0.5f;
-    public float ditherStrength = 0.1f;
-    public float softness = 0.01f;
-    public float textureBlend = 0.2f;
-
-    public ShaderSettings GetFinalSettings()
-    {
-        if (preset != null) return preset.settings;
-        return this;
-    }
 }

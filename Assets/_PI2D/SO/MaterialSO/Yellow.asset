@@ -13,15 +13,11 @@ MonoBehaviour:
   m_Name: Yellow
   m_EditorClassIdentifier: Assembly-CSharp::MaterialPresetSO
   presetName: Yellow
-  settings:
-    applyChanges: 1
-    transitionDuration: 0.51
-    preset: {fileID: 0}
-    lightColor: {r: 0.8352942, g: 0.7254902, b: 0.41960788, a: 1}
-    darkColor: {r: 0.050980397, g: 0, b: 0.003921569, a: 1}
-    noiseSpeed: 1.99
-    noiseScale: -0.1
-    ditherThreshold: 0.67
-    ditherStrength: 0.03
-    softness: 0.33
-    textureBlend: -0.1
+  lightColor: {r: 0, g: 0, b: 0, a: 1}
+  darkColor: {r: 0.93207544, g: 0.8464242, b: 0.483624, a: 1}
+  noiseSpeed: 1.99
+  noiseScale: -0.1
+  ditherThreshold: 0.0509
+  ditherStrength: 0.03
+  softness: 0.01
+  textureBlend: -0.1

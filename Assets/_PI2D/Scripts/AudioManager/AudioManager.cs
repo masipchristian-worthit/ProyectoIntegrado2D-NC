@@ -95,4 +95,10 @@ public class AudioManager : MonoBehaviour
     {
         sfxSource.UnPause();
     }
+
+    public void ResumeMusic()
+    {
+        if (musicSource != null) musicSource.UnPause();
+    }
+
 }

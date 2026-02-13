@@ -21,8 +21,26 @@ EditorBuildSettings:
     path: Assets/_PI2D/Scenes/SCN3_PASILLO1.unity
     guid: 78027cc5555f8e348bfb0896a7ad41d5
   - enabled: 1
-    path: Assets/_PI2D/Scenes/SCN4_PASILLO1.unity
+    path: Assets/_PI2D/Scenes/SCN4_PASILLO1.1.unity
     guid: 93094649e71e2794689e0493a1ad60c0
+  - enabled: 1
+    path: Assets/_PI2D/Scenes/SCN5_PATIO1.unity
+    guid: 09260a8ede599e747b78d23ccb618a64
+  - enabled: 0
+    path: Assets/_PI2D/Scenes/SCN7_PATIO3.unity
+    guid: d3a946559a420614a9aae55c8e25deb2
+  - enabled: 1
+    path: Assets/_PI2D/Scenes/SCN6_PATIO2.unity
+    guid: b060ea8caa43bc44a97d7801840198d5
+  - enabled: 1
+    path: Assets/_PI2D/Scenes/SCN8_PASILLO11.unity
+    guid: f11b3e01b59febb40ba5287f9cf31475
+  - enabled: 1
+    path: Assets/_PI2D/Scenes/SCN9.unity
+    guid: 06db5be2c42ce7d4e8750e79d7dae730
+  - enabled: 1
+    path: Assets/_PI2D/Scenes/SCN10_Options.unity
+    guid: f8f8276c126e34b44a58619c8e971c0f
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

@@ -5,71 +5,66 @@ using TMPro;
 using UnityEngine.UI;
 using DG.Tweening;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 public class DialogueManager : MonoBehaviour
 {
     public static DialogueManager Instance;
 
-    [Header("Main Containers")]
+    [Header("UI References")]
     [SerializeField] private GameObject mainCanvasObject;
     [SerializeField] private RectTransform dialoguePanelRect;
-
-    [Header("Global Material Control")]
-    [SerializeField] private Material globalSharedMaterial;
-    public Material GlobalMaterial => globalSharedMaterial;
-
-    [Header("UI Elements")]
     [SerializeField] private TextMeshProUGUI dialogueText;
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private Transform optionsContainer;
     [SerializeField] private GameObject optionButtonPrefab;
 
-    [Header("Tiempos y Ritmos")]
+    [Header("Global Material Control")]
+    [SerializeField] private Material globalSharedMaterial;
+    public Material GlobalMaterial => globalSharedMaterial;
+
+    [Header("Settings")]
     [SerializeField] private float typingSpeed = 0.05f;
     [SerializeField] private float panelAnimationSpeed = 0.5f;
     [SerializeField] private float startInputCooldown = 0.5f;
     [SerializeField] private float nextSentenceCooldown = 0.5f;
     [SerializeField] private float buttonAppearanceCooldown = 1.0f;
-
-    [Header("Audio Ajustes")]
-    [Tooltip("Frecuencia del sonido de voz (1 = cada letra, 2 = cada dos letras...).")]
     [SerializeField] private int audioFrequency = 2;
 
     private Vector2 originalPanelPosition;
 
-    // BACKUP DE MATERIAL
-    private Color backupLightColor;
-    private Color backupDarkColor;
-    private float backupNoiseSpeed;
-    private float backupNoiseScale;
-    private float backupDitherThreshold;
-    private float backupDitherStrength;
-    private float backupSoftness;
-    private float backupTextureBlend;
+    // Memoria para el Shader (Persistencia)
+    private Color currentLightColor;
+    private Color currentDarkColor;
+    private float currentNoiseSpeed, currentNoiseScale;
+    private float currentDitherThreshold, currentDitherStrength;
+    private float currentSoftness, currentTextureBlend;
 
     private bool isTyping = false;
     private bool canAdvanceText = false;
     private DialogueNode currentNode;
     private int currentSegmentIndex = 0;
 
-    public bool IsDialogueActive => mainCanvasObject.activeInHierarchy;
+    public bool IsDialogueActive
+    {
+        get
+        {
+            // Si el canvas ha sido destruido o es nulo, devolvemos false (no hay diálogo)
+            // en lugar de lanzar un error que congele el juego.
+            return mainCanvasObject != null && mainCanvasObject.activeInHierarchy;
+        }
+    }
 
     void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-
-        if (globalSharedMaterial != null)
+        if (Instance == null)
         {
-            backupLightColor = globalSharedMaterial.GetColor("_LightColor");
-            backupDarkColor = globalSharedMaterial.GetColor("_DarkColor");
-            backupNoiseSpeed = globalSharedMaterial.GetFloat("_NoiseSpeed");
-            backupNoiseScale = globalSharedMaterial.GetFloat("_NoiseScale");
-            backupDitherThreshold = globalSharedMaterial.GetFloat("_DitherThreshold");
-            backupDitherStrength = globalSharedMaterial.GetFloat("_DitherStrength");
-            backupSoftness = globalSharedMaterial.GetFloat("_Softness");
-            backupTextureBlend = globalSharedMaterial.GetFloat("_TextureBlend");
+            Instance = this;
+            transform.SetParent(null);
+            DontDestroyOnLoad(gameObject);
+            SaveCurrentMaterialStateToMemory();
         }
+        else Destroy(gameObject);
 
         if (mainCanvasObject != null) mainCanvasObject.SetActive(false);
         if (dialoguePanelRect != null)
@@ -79,27 +74,15 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
-    {
-        RestoreMaterialDefaults();
-    }
+    void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
+    void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode) => ApplyMemoryToMaterial();
 
-    public void RestoreMaterialDefaults()
-    {
-        if (globalSharedMaterial == null) return;
-        globalSharedMaterial.SetColor("_LightColor", backupLightColor);
-        globalSharedMaterial.SetColor("_DarkColor", backupDarkColor);
-        globalSharedMaterial.SetFloat("_NoiseSpeed", backupNoiseSpeed);
-        globalSharedMaterial.SetFloat("_NoiseScale", backupNoiseScale);
-        globalSharedMaterial.SetFloat("_DitherThreshold", backupDitherThreshold);
-        globalSharedMaterial.SetFloat("_DitherStrength", backupDitherStrength);
-        globalSharedMaterial.SetFloat("_Softness", backupSoftness);
-        globalSharedMaterial.SetFloat("_TextureBlend", backupTextureBlend);
-    }
-
+    // --- START DIALOGUE ---
     public void StartDialogue(DialogueNode rootNode)
     {
         if (rootNode == null) return;
+        if (NarrativeManager.Instance != null && NarrativeManager.Instance.IsDialogueBlocked(rootNode.name)) return;
 
         if (dialogueText != null) dialogueText.text = string.Empty;
         ClearOptions();
@@ -107,9 +90,7 @@ public class DialogueManager : MonoBehaviour
         Time.timeScale = 0f;
         canAdvanceText = false;
 
-        if (InputManager.Instance != null)
-            InputManager.Instance.SwitchTo(InputManager.InputMapType.UI);
-
+        if (InputManager.Instance != null) InputManager.Instance.SwitchTo(InputManager.InputMapType.UI);
         if (mainCanvasObject != null) mainCanvasObject.SetActive(true);
         if (dialoguePanelRect != null) dialoguePanelRect.gameObject.SetActive(true);
 
@@ -123,21 +104,22 @@ public class DialogueManager : MonoBehaviour
             });
     }
 
-    private IEnumerator EnableInputAfterCooldown(float duration)
-    {
-        yield return new WaitForSecondsRealtime(duration);
-        canAdvanceText = true;
-    }
-
     private void DisplayNode(DialogueNode node)
     {
         currentNode = node;
         currentSegmentIndex = 0;
         ClearOptions();
 
-        if (node == null || node.dialogueSequence == null || node.dialogueSequence.Length == 0)
+        // --- CONTROL DE MÚSICA ---
+        if (AudioManager.Instance != null)
         {
-            EndDialogue();
+            if (node.stopMusic) AudioManager.Instance.PauseMusic();
+            if (node.resumeMusic) AudioManager.Instance.ResumeMusic();
+        }
+
+        if (node.dialogueSequence == null || node.dialogueSequence.Length == 0)
+        {
+            FinishCurrentNode();
             return;
         }
 
@@ -149,61 +131,26 @@ public class DialogueManager : MonoBehaviour
     {
         isTyping = true;
         canAdvanceText = true;
-
         if (dialogueText != null) dialogueText.text = "";
         if (nameText != null) nameText.text = segment.speakerName;
 
-        // --- CORRECCIÓN SHADER: Usamos tu lógica original ---
-        if (segment.visualEffect.applyChanges && globalSharedMaterial != null && segment.visualEffect.preset != null)
-        {
+        if (segment.visualEffect.applyChanges && segment.visualEffect.preset != null)
             ApplyShaderSettings(segment.visualEffect);
-        }
-        // ---------------------------------------------------
 
         char[] letters = segment.text.ToCharArray();
         for (int i = 0; i < letters.Length; i++)
         {
             if (dialogueText != null) dialogueText.text += letters[i];
-
-            // --- SONIDO DE TIPEO (Estilo Undertale) ---
-            if (currentNode.typingSound != null && AudioManager.Instance != null)
+            if (currentNode.typingSound != null && AudioManager.Instance != null && i % audioFrequency == 0)
             {
-                if (i % audioFrequency == 0)
-                {
-                    AudioManager.Instance.sfxSource.pitch = Random.Range(0.9f, 1.1f);
-                    AudioManager.Instance.sfxSource.PlayOneShot(currentNode.typingSound);
-                }
+                AudioManager.Instance.sfxSource.pitch = Random.Range(0.9f, 1.1f);
+                AudioManager.Instance.sfxSource.PlayOneShot(currentNode.typingSound);
             }
-            // ------------------------------------------
-
             yield return new WaitForSecondsRealtime(typingSpeed);
         }
-
         if (AudioManager.Instance != null) AudioManager.Instance.sfxSource.pitch = 1f;
-
         isTyping = false;
-        // La lógica DisplayNextSentence maneja el avance desde aquí
     }
-
-    // --- CORRECCIÓN FUNCIÓN SHADER ---
-    // Volvemos a leer desde 'settings.preset' que es lo que existe en tu proyecto
-    void ApplyShaderSettings(ShaderSettings settings)
-    {
-        if (globalSharedMaterial == null || settings.preset == null) return;
-
-        float duration = settings.transitionDuration;
-        MaterialPresetSO p = settings.preset; // Referencia corta
-
-        globalSharedMaterial.DOColor(p.lightColor, "_LightColor", duration).SetUpdate(true);
-        globalSharedMaterial.DOColor(p.darkColor, "_DarkColor", duration).SetUpdate(true);
-        globalSharedMaterial.DOFloat(p.noiseSpeed, "_NoiseSpeed", duration).SetUpdate(true);
-        globalSharedMaterial.DOFloat(p.noiseScale, "_NoiseScale", duration).SetUpdate(true);
-        globalSharedMaterial.DOFloat(p.ditherThreshold, "_DitherThreshold", duration).SetUpdate(true);
-        globalSharedMaterial.DOFloat(p.ditherStrength, "_DitherStrength", duration).SetUpdate(true);
-        globalSharedMaterial.DOFloat(p.softness, "_Softness", duration).SetUpdate(true);
-        globalSharedMaterial.DOFloat(p.textureBlend, "_TextureBlend", duration).SetUpdate(true);
-    }
-    // --------------------------------
 
     public void DisplayNextSentence()
     {
@@ -212,14 +159,9 @@ public class DialogueManager : MonoBehaviour
         if (isTyping)
         {
             StopAllCoroutines();
-            if (dialogueText != null && currentNode.dialogueSequence.Length > currentSegmentIndex)
-            {
-                dialogueText.text = currentNode.dialogueSequence[currentSegmentIndex].text;
-            }
+            if (dialogueText != null) dialogueText.text = currentNode.dialogueSequence[currentSegmentIndex].text;
             isTyping = false;
-
             if (AudioManager.Instance != null) AudioManager.Instance.sfxSource.pitch = 1f;
-
             canAdvanceText = false;
             StartCoroutine(WaitAfterSentenceFinished());
             return;
@@ -232,91 +174,43 @@ public class DialogueManager : MonoBehaviour
         }
         else
         {
-            if (optionsContainer != null && optionsContainer.childCount == 0)
-            {
-                GenerateOptions(currentNode);
-            }
+            FinishCurrentNode();
         }
     }
 
-    private IEnumerator WaitAfterSentenceFinished()
+    private void FinishCurrentNode()
     {
-        yield return new WaitForSecondsRealtime(nextSentenceCooldown);
-        canAdvanceText = true;
-    }
-
-    void GenerateOptions(DialogueNode node)
-    {
-        canAdvanceText = false;
-        if (dialogueText != null) dialogueText.text = "";
-        ClearOptions();
-
-        if (node.responses != null && node.responses.Length > 0)
+        // 1. GESTIÓN DE BLOQUEO
+        // Solo bloqueamos el diálogo para el futuro, pero NO ejecutamos eventos (carga de escena) todavía.
+        if (NarrativeManager.Instance != null && currentNode.lockAfterCompletion)
         {
-            foreach (DialogueResponse response in node.responses)
-            {
-                DialogueNode next = response.nextNode;
-                CreateButton(response.responseText, () => OnOptionSelected(next), false);
-            }
+            NarrativeManager.Instance.BlockDialogue(currentNode.name);
         }
-        else
+
+        // 2. CASO: HAY SIGUIENTE NODO (Encadenado)
+        if (currentNode.nextNode != null)
         {
-            CreateButton("Cerrar", EndDialogue, false);
+            // Como NO vamos a pasar por EndDialogue, aquí SÍ debemos registrar el evento manualmente
+            // para guardar flags o dar items antes de pasar a la siguiente frase.
+            if (NarrativeManager.Instance != null)
+                NarrativeManager.Instance.CheckForNarrativeEvents(currentNode);
+
+            DisplayNode(currentNode.nextNode);
+            return;
         }
 
-        StartCoroutine(ActivateButtonsAfterDelay());
-    }
-
-    private IEnumerator ActivateButtonsAfterDelay()
-    {
-        yield return new WaitForSecondsRealtime(buttonAppearanceCooldown);
-        Button[] buttons = optionsContainer.GetComponentsInChildren<Button>();
-        foreach (Button btn in buttons) btn.interactable = true;
-
-        if (buttons.Length > 0)
+        // 3. CASO: HAY RESPUESTAS (Opciones)
+        if (currentNode.responses != null && currentNode.responses.Length > 0)
         {
-            Canvas.ForceUpdateCanvases();
-            EventSystem.current.SetSelectedGameObject(null);
-            EventSystem.current.SetSelectedGameObject(buttons[0].gameObject);
+            // Mostramos opciones y esperamos input del jugador.
+            GenerateOptions(currentNode);
+            return;
         }
-    }
 
-    void CreateButton(string text, UnityEngine.Events.UnityAction action, bool startInteractable)
-    {
-        if (optionButtonPrefab == null) return;
-        GameObject btnObj = Instantiate(optionButtonPrefab, optionsContainer);
-        btnObj.transform.localScale = Vector3.one;
-        Vector3 localPos = btnObj.transform.localPosition;
-        btnObj.transform.localPosition = new Vector3(localPos.x, localPos.y, 0);
-
-        TextMeshProUGUI btnText = btnObj.GetComponentInChildren<TextMeshProUGUI>();
-        if (btnText) btnText.text = text;
-
-        Button btn = btnObj.GetComponent<Button>();
-        DialogueButtonAnim anim = btnObj.GetComponent<DialogueButtonAnim>();
-
-        if (btn)
-        {
-            btn.onClick.RemoveAllListeners();
-            btn.onClick.AddListener(() =>
-            {
-                btn.interactable = false;
-                if (anim != null) anim.PlayClickAnimation(() => action.Invoke());
-                else action.Invoke();
-            });
-            btn.interactable = startInteractable;
-        }
-    }
-
-    void OnOptionSelected(DialogueNode nextNode)
-    {
-        if (nextNode != null) DisplayNode(nextNode);
-        else EndDialogue();
-    }
-
-    void ClearOptions()
-    {
-        foreach (Transform child in optionsContainer) Destroy(child.gameObject);
+        // 4. CASO: FIN DEL DIÁLOGO (Aquí estaba el error duplicado)
+        // Ya NO llamamos a CheckForNarrativeEvents aquí arriba.
+        // Dejamos que EndDialogue() se encargue de llamarlo tras la animación y el delay.
+        EndDialogue();
     }
 
     public void EndDialogue()
@@ -326,21 +220,118 @@ public class DialogueManager : MonoBehaviour
         currentNode = null;
 
         dialoguePanelRect.DOAnchorPos(new Vector2(originalPanelPosition.x, -Screen.height), panelAnimationSpeed)
-            .SetEase(Ease.InBack)
-            .SetUpdate(true)
-            .OnComplete(() =>
+            .SetEase(Ease.InBack).SetUpdate(true).OnComplete(() =>
             {
-                if (dialogueText != null) dialogueText.text = string.Empty;
                 if (mainCanvasObject != null) mainCanvasObject.SetActive(false);
                 Time.timeScale = 1f;
 
-                if (NarrativeManager.Instance != null && finishedNode != null)
+                if (finishedNode != null && finishedNode.changeSceneOnEnd)
+                    StartCoroutine(WaitAndTriggerEvents(finishedNode, 1.5f));
+                else
                 {
-                    NarrativeManager.Instance.CheckForNarrativeEvents(finishedNode);
+                    if (NarrativeManager.Instance != null) NarrativeManager.Instance.CheckForNarrativeEvents(finishedNode);
+                    if (InputManager.Instance != null) InputManager.Instance.SwitchTo(InputManager.InputMapType.Gameplay);
                 }
-
-                if (InputManager.Instance != null)
-                    InputManager.Instance.SwitchTo(InputManager.InputMapType.Gameplay);
             });
     }
+
+    private IEnumerator WaitAndTriggerEvents(DialogueNode node, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (NarrativeManager.Instance != null) NarrativeManager.Instance.CheckForNarrativeEvents(node);
+    }
+
+    // --- MEMORIA Y SHADER ---
+    private void SaveCurrentMaterialStateToMemory()
+    {
+        if (globalSharedMaterial == null) return;
+        currentLightColor = globalSharedMaterial.GetColor("_LightColor");
+        currentDarkColor = globalSharedMaterial.GetColor("_DarkColor");
+        currentNoiseSpeed = globalSharedMaterial.GetFloat("_NoiseSpeed");
+        currentNoiseScale = globalSharedMaterial.GetFloat("_NoiseScale");
+        currentDitherThreshold = globalSharedMaterial.GetFloat("_DitherThreshold");
+        currentDitherStrength = globalSharedMaterial.GetFloat("_DitherStrength");
+        currentSoftness = globalSharedMaterial.GetFloat("_Softness");
+        currentTextureBlend = globalSharedMaterial.GetFloat("_TextureBlend");
+    }
+
+    private void ApplyMemoryToMaterial()
+    {
+        if (globalSharedMaterial == null) return;
+        globalSharedMaterial.SetColor("_LightColor", currentLightColor);
+        globalSharedMaterial.SetColor("_DarkColor", currentDarkColor);
+        globalSharedMaterial.SetFloat("_NoiseSpeed", currentNoiseSpeed);
+        globalSharedMaterial.SetFloat("_NoiseScale", currentNoiseScale);
+        globalSharedMaterial.SetFloat("_DitherThreshold", currentDitherThreshold);
+        globalSharedMaterial.SetFloat("_DitherStrength", currentDitherStrength);
+        globalSharedMaterial.SetFloat("_Softness", currentSoftness);
+        globalSharedMaterial.SetFloat("_TextureBlend", currentTextureBlend);
+    }
+
+    void ApplyShaderSettings(ShaderSettings settings)
+    {
+        if (globalSharedMaterial == null || settings.preset == null) return;
+        float d = settings.transitionDuration;
+        MaterialPresetSO p = settings.preset;
+
+        globalSharedMaterial.DOColor(p.lightColor, "_LightColor", d).SetUpdate(true);
+        globalSharedMaterial.DOColor(p.darkColor, "_DarkColor", d).SetUpdate(true);
+        globalSharedMaterial.DOFloat(p.noiseSpeed, "_NoiseSpeed", d).SetUpdate(true);
+        globalSharedMaterial.DOFloat(p.noiseScale, "_NoiseScale", d).SetUpdate(true);
+        globalSharedMaterial.DOFloat(p.ditherThreshold, "_DitherThreshold", d).SetUpdate(true);
+        globalSharedMaterial.DOFloat(p.ditherStrength, "_DitherStrength", d).SetUpdate(true);
+        globalSharedMaterial.DOFloat(p.softness, "_Softness", d).SetUpdate(true);
+        globalSharedMaterial.DOFloat(p.textureBlend, "_TextureBlend", d).SetUpdate(true);
+
+        currentLightColor = p.lightColor; currentDarkColor = p.darkColor;
+        currentNoiseSpeed = p.noiseSpeed; currentNoiseScale = p.noiseScale;
+        currentDitherThreshold = p.ditherThreshold; currentDitherStrength = p.ditherStrength;
+        currentSoftness = p.softness; currentTextureBlend = p.textureBlend;
+    }
+
+    // UTILS
+    private IEnumerator EnableInputAfterCooldown(float duration)
+    {
+        yield return new WaitForSecondsRealtime(duration);
+        canAdvanceText = true;
+    }
+    private IEnumerator WaitAfterSentenceFinished()
+    {
+        yield return new WaitForSecondsRealtime(nextSentenceCooldown);
+        canAdvanceText = true;
+    }
+    void GenerateOptions(DialogueNode node)
+    {
+        canAdvanceText = false;
+        if (dialogueText != null) dialogueText.text = "";
+        ClearOptions();
+        foreach (DialogueResponse response in node.responses)
+            CreateButton(response.responseText, () => OnOptionSelected(response.nextNode));
+        StartCoroutine(ActivateButtonsAfterDelay());
+    }
+    void CreateButton(string text, UnityEngine.Events.UnityAction action)
+    {
+        if (optionButtonPrefab == null) return;
+
+        GameObject btnObj = Instantiate(optionButtonPrefab, optionsContainer);
+
+        // --- FUERZA LA POSICIÓN Y ESCALA ---
+        btnObj.transform.localScale = Vector3.one;
+        btnObj.transform.localPosition = Vector3.zero; // Resetea posición local
+        // -----------------------------------
+
+        btnObj.GetComponentInChildren<TextMeshProUGUI>().text = text;
+        Button btn = btnObj.GetComponent<Button>();
+        btn.onClick.AddListener(() => { btn.interactable = false; action.Invoke(); });
+        btn.interactable = false;
+    }
+    private IEnumerator ActivateButtonsAfterDelay()
+    {
+        yield return new WaitForSecondsRealtime(buttonAppearanceCooldown);
+        Button[] buttons = optionsContainer.GetComponentsInChildren<Button>();
+        foreach (Button btn in buttons) btn.interactable = true;
+        if (buttons.Length > 0) { Canvas.ForceUpdateCanvases(); EventSystem.current.SetSelectedGameObject(buttons[0].gameObject); }
+    }
+    void OnOptionSelected(DialogueNode nextNode) => DisplayNode(nextNode != null ? nextNode : null);
+    void ClearOptions() { foreach (Transform child in optionsContainer) Destroy(child.gameObject); }
 }

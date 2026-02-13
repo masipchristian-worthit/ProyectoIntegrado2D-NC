@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef1e494b5b287674388cfa7923fbcb27, type: 3}
+  m_Name: DBlue
+  m_EditorClassIdentifier: Assembly-CSharp::MaterialPresetSO
+  presetName: Blue
+  lightColor: {r: 0, g: 0, b: 0, a: 1}
+  darkColor: {r: 0.1491862, g: 0.1411765, b: 0.39607844, a: 1}
+  noiseSpeed: 1.99
+  noiseScale: -0.1
+  ditherThreshold: 0.67
+  ditherStrength: 0.03
+  softness: 0.33
+  textureBlend: -0.1

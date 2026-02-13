@@ -12,17 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc638dcbe410b642921e883836e3fde, type: 3}
   m_Name: Profesor3
   m_EditorClassIdentifier: Assembly-CSharp::DialogueNode
-  typingSound: {fileID: 0}
+  typingSound: {fileID: 8300000, guid: da2bc3170e3230b41b80dd719bad661f, type: 3}
   dialogueSequence:
   - speakerName: "Sr. Garc\xEDa"
-    text: "Recordad que ten\xE9is que hacer el ejercicio 6 y 7 de la p\xE1gina 34."
+    text: Remember that you have to do exercises 6 and 7 on page 34.
     visualEffect:
       applyChanges: 0
       transitionDuration: 0.5
       preset: {fileID: 0}
+  nextNode: {fileID: 0}
+  lockAfterCompletion: 0
   responses: []
   prefabToSpawn: {fileID: 0}
   spawnPointTag: 
   eventID: 
   changeSceneOnEnd: 1
   targetSceneIndex: 2
+  objectToActivate: {fileID: 0}

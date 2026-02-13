@@ -9,6 +9,20 @@ public class DialogueNode : ScriptableObject
     [Header("Secuencia")]
     public DialogueSegment[] dialogueSequence;
 
+    [Header("Encadenamiento (Sin Opciones)")]
+    [Tooltip("Arrastra aquí el siguiente DialogueNode para que salte automáticamente al terminar.")]
+    public DialogueNode nextNode;
+
+    [Tooltip("Si marcas esto, la música se pausará al empezar este diálogo.")]
+    public bool stopMusic = false;
+    [Tooltip("Si marcas esto, la música volverá a sonar al empezar este diálogo.")]
+    public bool resumeMusic = false;
+
+    // --- NUEVO 2: BLOQUEO ---
+    [Header("Comportamiento al Finalizar")]
+    [Tooltip("Si es TRUE, el jugador no podrá volver a iniciar este diálogo (útil para eventos únicos).")]
+    public bool lockAfterCompletion = false;
+
     [Header("Decisión Final")]
     public DialogueResponse[] responses;
 
@@ -21,6 +35,7 @@ public class DialogueNode : ScriptableObject
     public bool changeSceneOnEnd = false;
     // CAMBIO: Usamos int para el ID de la Build
     public int targetSceneIndex;
+    public GameObject objectToActivate;
 }
 
 [System.Serializable]

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc638dcbe410b642921e883836e3fde, type: 3}
   m_Name: ProfesorRT1.1
   m_EditorClassIdentifier: Assembly-CSharp::DialogueNode
-  typingSound: {fileID: 0}
+  typingSound: {fileID: 8300000, guid: da2bc3170e3230b41b80dd719bad661f, type: 3}
   dialogueSequence:
   - speakerName: Sr. Garcia
     text: Get out of the class!
@@ -20,9 +20,12 @@ MonoBehaviour:
       applyChanges: 0
       transitionDuration: 0
       preset: {fileID: 0}
+  nextNode: {fileID: 0}
+  lockAfterCompletion: 0
   responses: []
   prefabToSpawn: {fileID: 0}
   spawnPointTag: 
   eventID: 
   changeSceneOnEnd: 0
   targetSceneIndex: 0
+  objectToActivate: {fileID: 0}

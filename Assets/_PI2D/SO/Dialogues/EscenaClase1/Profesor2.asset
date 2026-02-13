@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc638dcbe410b642921e883836e3fde, type: 3}
   m_Name: Profesor2
   m_EditorClassIdentifier: Assembly-CSharp::DialogueNode
-  typingSound: {fileID: 0}
+  typingSound: {fileID: 8300000, guid: da2bc3170e3230b41b80dd719bad661f, type: 3}
   dialogueSequence:
   - speakerName: "Sr. Garc\xEDa"
-    text: Salid, de uno en uno.
+    text: Come out one at a time.
     visualEffect:
       applyChanges: 0
       transitionDuration: 0.5
       preset: {fileID: 0}
+  nextNode: {fileID: 0}
+  lockAfterCompletion: 0
   responses:
   - responseText: ...
     nextNode: {fileID: 11400000, guid: 2b49abb03a2afb347b305aa966968b54, type: 2}
@@ -27,4 +29,5 @@ MonoBehaviour:
   spawnPointTag: 
   eventID: 
   changeSceneOnEnd: 0
-  targetSceneName: 
+  targetSceneIndex: 0
+  objectToActivate: {fileID: 0}

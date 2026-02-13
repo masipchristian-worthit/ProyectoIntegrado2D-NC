@@ -12,14 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc638dcbe410b642921e883836e3fde, type: 3}
   m_Name: ProfesorRT1
   m_EditorClassIdentifier: Assembly-CSharp::DialogueNode
-  typingSound: {fileID: 0}
+  typingSound: {fileID: 8300000, guid: da2bc3170e3230b41b80dd719bad661f, type: 3}
   dialogueSequence:
   - speakerName: Sr. Garcia
     text: What are you waiting for?
     visualEffect:
-      applyChanges: 0
-      transitionDuration: 0
-      preset: {fileID: 0}
+      applyChanges: 1
+      transitionDuration: 1.5
+      preset: {fileID: 11400000, guid: 2749313b367c22b42a5b8ca3bb40ac5e, type: 2}
+  nextNode: {fileID: 0}
+  stopMusic: 0
+  resumeMusic: 0
+  lockAfterCompletion: 1
   responses:
   - responseText: Nothing...
     nextNode: {fileID: 11400000, guid: e1443dc9d024fbf42bef6797e40f7d13, type: 2}
@@ -30,3 +34,4 @@ MonoBehaviour:
   eventID: 
   changeSceneOnEnd: 0
   targetSceneIndex: 0
+  objectToActivate: {fileID: 0}

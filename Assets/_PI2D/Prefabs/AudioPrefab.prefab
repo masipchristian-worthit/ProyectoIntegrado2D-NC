@@ -77,9 +77,9 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: 4ad7f4abb3bf6a148953df6fe171ffba, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.254
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -341,5 +341,8 @@ MonoBehaviour:
   musicLibrary:
   - {fileID: 8300000, guid: 5cefbc13ff6ca3547b062d80b8cf3ce3, type: 3}
   - {fileID: 8300000, guid: 4ad7f4abb3bf6a148953df6fe171ffba, type: 3}
-  sfxLibrary: []
+  - {fileID: 8300000, guid: a027d13a2adc7ce4db6642d4da000b9c, type: 3}
+  sfxLibrary:
+  - {fileID: 8300000, guid: b33eb1fd9cbf0b34d93f1ade86f8787b, type: 3}
+  - {fileID: 8300000, guid: da2bc3170e3230b41b80dd719bad661f, type: 3}
   isPriorityPlaying: 0

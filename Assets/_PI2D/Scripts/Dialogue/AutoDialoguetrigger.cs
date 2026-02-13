@@ -8,11 +8,11 @@ public class AutoDialogueTrigger : MonoBehaviour
     [SerializeField] private DialogueNode dialogue;
 
     [Header("Tiempos")]
-    [Tooltip("Segundos de espera antes de que empiece a sonar el audio o salga el texto.")]
-    [SerializeField] private float executionDelay = 0f;
+    [Tooltip("Segundos de espera antes de que empiece la secuencia.")]
+    [SerializeField] private float executionDelay = 0.5f; // Recomendado 0.5s para dar aire al entrar
 
-    [Header("Audio Previo")]
-    [Tooltip("El NÚMERO del sonido en la lista 'Sfx Library' del AudioManager. Pon -1 si no quieres sonido.")]
+    [Header("Audio Previo (Opcional)")]
+    [Tooltip("El índice del sonido en el AudioManager. Pon -1 si solo quieres texto.")]
     [SerializeField] private int soundIndex = -1;
 
     [Header("Comportamiento al terminar")]
@@ -26,21 +26,24 @@ public class AutoDialogueTrigger : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 1. ¿Detecta colisión física?
-        Debug.Log($"[TEST] Algo entró en el trigger: {collision.gameObject.name} | Tag: {collision.tag}");
-
+        // Filtro: Solo el Player y si no se ha activado antes
         if (collision.CompareTag("Player") && !hasTriggered)
         {
-            // 2. ¿Pasa el filtro de Tag?
-            Debug.Log("[TEST] Tag Player correcto.");
+            // Nota: No comprobamos DialogueManager.Instance aquí todavía 
+            // porque en la Build podría ser null un milisegundo.
+            // Lo comprobamos dentro de la corrutina.
 
-            if (DialogueManager.Instance.IsDialogueActive)
+            // --- CHECK DE INVENTARIO ---
+            if (requiresItem)
             {
-                Debug.Log("[TEST] BLOQUEADO: El DialogueManager dice que ya hay un diálogo activo.");
-                return;
+                // Si el manager no está listo o no tiene el item, abortamos
+                if (InventoryManager.Instance != null && !InventoryManager.Instance.HasItem(requiredItemID))
+                {
+                    return;
+                }
             }
+            // ---------------------------
 
-            Debug.Log("[TEST] Iniciando secuencia...");
             StartCoroutine(TriggerSequenceRoutine());
         }
     }
@@ -49,40 +52,63 @@ public class AutoDialogueTrigger : MonoBehaviour
     {
         hasTriggered = true;
 
-        // 1. DELAY INICIAL (NUEVO)
+        // -----------------------------------------------------------
+        // 1. ESPERA DE SEGURIDAD (CRÍTICO PARA LA BUILD)
+        // -----------------------------------------------------------
+
+        // Esperamos a que el DialogueManager esté listo (evita errores al cambiar de escena)
+        while (DialogueManager.Instance == null)
+        {
+            yield return null; // Esperar al siguiente frame
+        }
+
+        // Si hemos configurado sonido, esperamos también al AudioManager
+        if (soundIndex >= 0)
+        {
+            while (AudioManager.Instance == null)
+            {
+                yield return null;
+            }
+        }
+
+        // -----------------------------------------------------------
+        // 2. DELAY ESTÉTICO
+        // -----------------------------------------------------------
         if (executionDelay > 0f)
         {
             yield return new WaitForSeconds(executionDelay);
         }
 
-        // 2. LÓGICA DE AUDIO
-        if (soundIndex >= 0 && AudioManager.Instance != null)
+        // -----------------------------------------------------------
+        // 3. LÓGICA DE AUDIO (Solo si soundIndex >= 0)
+        // -----------------------------------------------------------
+        if (soundIndex >= 0)
         {
+            AudioManager.Instance.PlaySFX(soundIndex);
+
+            // Esperar a que termine el sonido ANTES de sacar el texto
+            // (Si prefieres que salgan a la vez, borra este bloque if)
             if (soundIndex < AudioManager.Instance.sfxLibrary.Length)
             {
-                // A. Reproducir
-                AudioManager.Instance.PlaySFX(soundIndex);
-
-                // B. Esperar duración del audio
                 AudioClip clip = AudioManager.Instance.sfxLibrary[soundIndex];
                 if (clip != null)
                 {
                     yield return new WaitForSeconds(clip.length);
                 }
             }
-            else
-            {
-                Debug.LogWarning($"[AutoDialogueTrigger] El índice {soundIndex} no existe en AudioManager.");
-            }
         }
 
-        // 3. ABRIR DIÁLOGO
+        // -----------------------------------------------------------
+        // 4. ABRIR DIÁLOGO
+        // -----------------------------------------------------------
         if (dialogue != null)
         {
             DialogueManager.Instance.StartDialogue(dialogue);
         }
 
-        // 4. DESACTIVAR
+        // -----------------------------------------------------------
+        // 5. DESACTIVAR
+        // -----------------------------------------------------------
         if (deactivateGameObject)
         {
             gameObject.SetActive(false);

@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc638dcbe410b642921e883836e3fde, type: 3}
   m_Name: Profesor1
   m_EditorClassIdentifier: Assembly-CSharp::DialogueNode
-  typingSound: {fileID: 0}
+  typingSound: {fileID: 8300000, guid: da2bc3170e3230b41b80dd719bad661f, type: 3}
   dialogueSequence:
   - speakerName: "Sr. Garc\xEDa"
-    text: Bueno, ya es hora del recreo.
+    text: Ok, kids. It's time It's time for recess.
     visualEffect:
-      applyChanges: 0
-      transitionDuration: 0.5
-      preset: {fileID: 0}
+      applyChanges: 1
+      transitionDuration: 0
+      preset: {fileID: 11400000, guid: e1941614023d36d45a8cc40aee870e06, type: 2}
+  nextNode: {fileID: 0}
+  lockAfterCompletion: 0
   responses:
   - responseText: ...
     nextNode: {fileID: 11400000, guid: 7bab4d7c8190efb4681fee8a686be8c5, type: 2}
@@ -27,4 +29,5 @@ MonoBehaviour:
   spawnPointTag: 
   eventID: 
   changeSceneOnEnd: 0
-  targetSceneName: 
+  targetSceneIndex: 0
+  objectToActivate: {fileID: 0}

@@ -1,10 +1,14 @@
 using UnityEngine;
 using System.Collections;
 
+[RequireComponent(typeof(BoxCollider2D))]
 public class DialogueTrigger : MonoBehaviour
 {
+    [Header("Configuración General")]
+    [Tooltip("Si es TRUE, el collider se desactivará para siempre tras hablar.")]
+    [SerializeField] private bool disableColliderOnEnd = false;
+
     [Header("Audio Previo")]
-    [Tooltip("Sonido que suena ANTES de abrir el diálogo. El panel espera a que termine.")]
     [SerializeField] private AudioClip preDialogueSound;
 
     [Header("1. Diálogo Normal")]
@@ -20,7 +24,10 @@ public class DialogueTrigger : MonoBehaviour
     [SerializeField] private DialogueNode lockedNode;
 
     private bool hasSpoken = false;
-    private bool isPending = false; // Evita spamear mientras suena el audio previo
+    private bool isPending = false;
+    private Collider2D myCollider;
+
+    private void Awake() => myCollider = GetComponent<Collider2D>();
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -29,51 +36,61 @@ public class DialogueTrigger : MonoBehaviour
             if (DialogueManager.Instance.IsDialogueActive || isPending) return;
 
             DialogueNode nodeToPlay = null;
+            bool shouldDisable = false;
 
-            // Prioridades
+            // Check Objeto
             if (requiresItem)
             {
                 if (InventoryManager.Instance != null && !InventoryManager.Instance.HasItem(requiredItemID))
                 {
-                    if (lockedNode != null) StartCoroutine(PlaySoundAndStart(lockedNode));
-                    else Debug.LogWarning("Falta Locked Node");
+                    if (lockedNode != null) StartCoroutine(PlaySoundAndStart(lockedNode, false));
+                    else Debug.LogWarning($"[DialogueTrigger] Falta Locked Node en {name}");
                     return;
                 }
             }
 
+            // Selección de nodo
             if (useVisitedLogic && hasSpoken && visitedNode != null)
             {
                 nodeToPlay = visitedNode;
+                shouldDisable = disableColliderOnEnd;
             }
             else
             {
                 nodeToPlay = firstEncounterNode;
                 hasSpoken = true;
+                shouldDisable = disableColliderOnEnd;
             }
 
             if (nodeToPlay != null)
-            {
-                StartCoroutine(PlaySoundAndStart(nodeToPlay));
-            }
+                StartCoroutine(PlaySoundAndStart(nodeToPlay, shouldDisable));
         }
     }
 
-    private IEnumerator PlaySoundAndStart(DialogueNode node)
+    private IEnumerator PlaySoundAndStart(DialogueNode node, bool disableCollider)
     {
-        isPending = true; // Bloqueamos input
+        isPending = true;
 
-        // 1. Audio Previo
         if (preDialogueSound != null && AudioManager.Instance != null)
         {
             AudioManager.Instance.sfxSource.PlayOneShot(preDialogueSound);
             yield return new WaitForSeconds(preDialogueSound.length);
         }
 
-        // 2. Diálogo
         DialogueManager.Instance.StartDialogue(node);
 
-        isPending = false; // Liberamos
+        if (disableCollider && myCollider != null)
+        {
+            myCollider.enabled = false;
+            Debug.Log($"[DialogueTrigger] Collider desactivado en {name}");
+        }
+
+        isPending = false;
     }
 
-    public void ResetDialogueState() => hasSpoken = false;
+    public void ResetDialogueState()
+    {
+        hasSpoken = false;
+        if (myCollider != null) myCollider.enabled = true;
+    }
 }
